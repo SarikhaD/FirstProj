@@ -50,12 +50,14 @@ class Player {
         this.height = 40;
         this.velocityY = 0;
         this.jumpPower = 15;
+        this.longJumpPower = 22;
         this.gravity = 0.8;
         this.onGround = false;
         this.animFrame = 0;
         this.animSpeed = 0.1;
         this.invincible = false;
         this.invincibleTimer = 0;
+        this.isLongJumping = false;
     }
 
     update() {
@@ -69,8 +71,32 @@ class Player {
 
         // Handle jumping
         if (keys['Space'] && this.onGround) {
-            this.velocityY = -this.jumpPower;
+            if (keys['KeyR']) {
+                // Long jump (R + Space)
+                this.velocityY = -this.longJumpPower;
+                this.isLongJumping = true;
+                createParticles(this.x + this.width/2, this.y + this.height, '#FFD700', 8);
+                // Add boost particles
+                for (let i = 0; i < 5; i++) {
+                    const boostParticle = new Particle(
+                        this.x + this.width/2 + (Math.random() - 0.5) * 20,
+                        this.y + this.height + Math.random() * 10,
+                        '#FFA500'
+                    );
+                    boostParticle.vy = Math.random() * 2 + 1;
+                    particles.push(boostParticle);
+                }
+            } else {
+                // Regular jump
+                this.velocityY = -this.jumpPower;
+                this.isLongJumping = false;
+            }
             this.onGround = false;
+        }
+        
+        // Reset long jump when landing
+        if (this.onGround) {
+            this.isLongJumping = false;
         }
 
         // Handle left/right movement
@@ -137,11 +163,18 @@ class Player {
         ctx.fillRect(this.x + 18, this.y - 10, 4, 2);
         ctx.fillRect(this.x + 19, this.y - 12, 2, 4);
         
-        // Wings (animated)
+        // Wings (animated) - enhanced during long jump
         const wingOffset = Math.sin(this.animFrame) * 2;
-        ctx.fillStyle = '#654321';
-        ctx.fillRect(this.x + 5, this.y + 15 + wingOffset, 8, 12);
-        ctx.fillRect(this.x + 27, this.y + 15 - wingOffset, 8, 12);
+        const wingSize = this.isLongJumping ? 14 : 12;
+        ctx.fillStyle = this.isLongJumping ? '#8B6F00' : '#654321';
+        ctx.fillRect(this.x + 5, this.y + 15 + wingOffset, 8, wingSize);
+        ctx.fillRect(this.x + 27, this.y + 15 - wingOffset, 8, wingSize);
+        
+        // Long jump aura effect
+        if (this.isLongJumping) {
+            ctx.fillStyle = 'rgba(255, 215, 0, 0.3)';
+            ctx.fillRect(this.x - 5, this.y - 5, this.width + 10, this.height + 10);
+        }
         
         ctx.restore();
     }
@@ -459,18 +492,28 @@ function spawnGameObject() {
     const spawnX = canvas.width + 50;
     const rand = Math.random();
     
-    if (rand < 0.15) {
+    // Adjust tiger spawn rate based on level
+    // Level 1: 5% tigers, Level 2: 10%, Level 3: 15%, etc. up to 30% max
+    const tigerRate = Math.min(0.05 + (level - 1) * 0.05, 0.3);
+    const tarotRate = 0.1; // Keep tarot cards at 10%
+    const obstacleRate = 0.45; // 45% for all obstacles combined
+    const chipRate = 0.2; // 20% for chips
+    
+    if (rand < obstacleRate / 3) {
         gameObjects.push(new Book(spawnX));
-    } else if (rand < 0.3) {
+    } else if (rand < (obstacleRate / 3) * 2) {
         gameObjects.push(new Table(spawnX));
-    } else if (rand < 0.45) {
+    } else if (rand < obstacleRate) {
         gameObjects.push(new Fireplace(spawnX));
-    } else if (rand < 0.65) {
+    } else if (rand < obstacleRate + chipRate) {
         gameObjects.push(new PotatoChip(spawnX));
-    } else if (rand < 0.75) {
+    } else if (rand < obstacleRate + chipRate + tarotRate) {
         gameObjects.push(new TarotCard(spawnX));
-    } else {
+    } else if (rand < obstacleRate + chipRate + tarotRate + tigerRate) {
         gameObjects.push(new ArmouredTiger(spawnX));
+    } else {
+        // Fill remaining probability with more chips for better balance
+        gameObjects.push(new PotatoChip(spawnX));
     }
 }
 
@@ -608,12 +651,40 @@ function gameLoop() {
                 gameObjects.splice(i, 1);
                 checkLevelUp();
             } else if (obj instanceof ArmouredTiger) {
-                if (player.takeDamage()) {
-                    lives--;
-                    createParticles(player.x + player.width/2, player.y + player.height/2, '#FF0000');
+                if (player.velocityY > 0 && player.y < obj.y && player.isLongJumping) {
+                    // Long jump defeat tiger
+                    score += 25;
+                    createParticles(obj.x + obj.width/2, obj.y + obj.height/2, '#FFD700', 12);
+                    // Tiger defeat effect
+                    for (let j = 0; j < 8; j++) {
+                        const explosion = new Particle(
+                            obj.x + obj.width/2 + (Math.random() - 0.5) * 40,
+                            obj.y + obj.height/2 + (Math.random() - 0.5) * 40,
+                            '#FFA500'
+                        );
+                        explosion.vx = (Math.random() - 0.5) * 6;
+                        explosion.vy = (Math.random() - 0.5) * 6;
+                        particles.push(explosion);
+                    }
                     gameObjects.splice(i, 1);
-                    if (lives <= 0) {
-                        gameOver();
+                    player.y = obj.y - player.height;
+                    player.velocityY = 0;
+                    player.onGround = true;
+                    checkLevelUp();
+                } else if (player.velocityY > 0 && player.y < obj.y) {
+                    // Regular jump on tiger - just land on it (no damage)
+                    player.y = obj.y - player.height;
+                    player.velocityY = 0;
+                    player.onGround = true;
+                } else {
+                    // Hit tiger from side or while falling - take damage
+                    if (player.takeDamage()) {
+                        lives--;
+                        createParticles(player.x + player.width/2, player.y + player.height/2, '#FF0000');
+                        gameObjects.splice(i, 1);
+                        if (lives <= 0) {
+                            gameOver();
+                        }
                     }
                 }
             } else if (obj instanceof Book || obj instanceof Table || obj instanceof Fireplace) {

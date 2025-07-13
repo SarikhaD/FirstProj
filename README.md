@@ -12,10 +12,11 @@ A retro-style HTML5 platformer game featuring a wizard owl navigating through a 
 ### Gameplay
 - **Continuous Running**: The owl runs continuously through the castle
 - **Jumping**: Use SPACEBAR to jump over obstacles
+- **Long Jump**: Hold R + SPACEBAR for a powerful long jump to defeat tigers
 - **Movement**: Use LEFT/RIGHT arrow keys for horizontal movement
 - **Lives System**: Start with 3 lives, lose one when hit by obstacles or enemies
 - **Level System**: Level up every 200 points and gain an extra life (max 5 lives)
-- **Progressive Difficulty**: Game speed increases with each level
+- **Progressive Difficulty**: Game speed increases with each level, more tigers spawn
 
 ### Castle Environment
 - **Dark Castle Setting**: Atmospheric dark castle with brick walls and textured floors
@@ -26,9 +27,10 @@ A retro-style HTML5 platformer game featuring a wizard owl navigating through a 
 
 ### Collectibles & Enemies
 - **🥔 Potato Chips**: Collect these for points (10 points each)
-- **� Tarot Cards**: Special mystical collectibles worth 50 points each with magical effects
-- **�🐅 Armoured Tigers**: Dodge these dangerous enemies that can take a life
-- **Particle Effects**: Visual feedback when collecting items or taking damage
+- **🔮 Tarot Cards**: Special mystical collectibles worth 50 points each with magical effects
+- **🐅 Armoured Tigers**: Dangerous enemies that can be defeated with long jump (25 points) or avoided
+- **Enemy Scaling**: Tiger spawn rate increases with level (5% at level 1, up to 30% max)
+- **Particle Effects**: Visual feedback when collecting items, taking damage, or defeating enemies
 
 ### UI & Scoring
 - **Player Name Input**: Enter your name before starting
@@ -43,12 +45,13 @@ A retro-style HTML5 platformer game featuring a wizard owl navigating through a 
 2. **Start**: Click "Start Game" to begin
 3. **Controls**:
    - `SPACEBAR`: Jump
+   - `R + SPACEBAR`: Long jump (defeats tigers)
    - `LEFT ARROW`: Move left
    - `RIGHT ARROW`: Move right
 4. **Objectives**:
    - Collect potato chips (10 points) and mystical tarot cards (50 points)
    - Avoid or jump over obstacles (books, tables, fireplaces)
-   - Dodge armoured tigers
+   - Defeat armoured tigers with long jump (25 points) or avoid them
    - Level up every 200 points to gain extra lives
    - Survive as long as possible to achieve a high score and maximum level
 
