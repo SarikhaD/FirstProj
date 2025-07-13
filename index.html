@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wizard Owl - Castle Runner</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="gameHeader">
+            <h1>🦉 Wizard Owl - Castle Runner</h1>
+            <div id="gameInfo">
+                <div id="playerInfo">
+                    <input type="text" id="playerName" placeholder="Enter your name" maxlength="15">
+                    <button id="startButton">Start Game</button>
+                    <button id="leaderboardButton">Leaderboard</button>
+                </div>
+                <div id="scoreBoard">
+                    <span>Score: <span id="score">0</span></span>
+                    <span>Level: <span id="level">1</span></span>
+                    <span>Lives: <span id="lives">3</span></span>
+                </div>
+            </div>
+        </div>
+        
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
+        
+        <div id="gameControls">
+            <p>Use SPACEBAR to jump, ARROW KEYS to move</p>
+            <p>❗ JUMP OVER obstacles or get stuck! Land on platforms briefly, then get down!</p>
+            <p>Hold R + SPACEBAR to LONG JUMP OVER tigers for 25pts! 🦉⚔️</p>
+            <p>Collect 🥔 chips (10pts) and 🔮 tarot cards (50pts)!</p>
+            <p>Use stacked 📚 books and floating platforms to reach higher levels!</p>
+            <p>🏆 Compete for the top spot on the Hall of Fame leaderboard! 🏆</p>
+        </div>
+        
+        <div id="gameOver" class="hidden">
+            <h2>Game Over!</h2>
+            <p>Final Score: <span id="finalScore">0</span></p>
+            <p>Level Reached: <span id="finalLevel">1</span></p>
+            <button id="restartButton">Play Again</button>
+            <button id="viewLeaderboardButton">View Leaderboard</button>
+        </div>
+        
+        <div id="leaderboard" class="hidden">
+            <h2>🏆 Hall of Fame 🏆</h2>
+            <div id="leaderboardContent">
+                <table id="leaderboardTable">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Wizard Name</th>
+                            <th>Score</th>
+                            <th>Level</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboardBody">
+                        <!-- Scores will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="leaderboardActions">
+                <button id="clearLeaderboardButton">Clear Records</button>
+                <button id="closeLeaderboardButton">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
