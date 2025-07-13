@@ -20,8 +20,22 @@ let particles = [];
 
 // Input handling
 const keys = {};
-document.addEventListener('keydown', (e) => keys[e.code] = true);
-document.addEventListener('keyup', (e) => keys[e.code] = false);
+document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') {
+        e.preventDefault(); // Prevent page scrolling
+    }
+    if (gameRunning && document.activeElement !== playerNameInput) {
+        keys[e.code] = true;
+    }
+});
+document.addEventListener('keyup', (e) => {
+    if (e.code === 'Space') {
+        e.preventDefault(); // Prevent page scrolling
+    }
+    if (gameRunning && document.activeElement !== playerNameInput) {
+        keys[e.code] = false;
+    }
+});
 
 // Player class (Wizard Owl)
 class Player {
@@ -36,9 +50,19 @@ class Player {
         this.onGround = false;
         this.animFrame = 0;
         this.animSpeed = 0.1;
+        this.invincible = false;
+        this.invincibleTimer = 0;
     }
 
     update() {
+        // Handle invincibility
+        if (this.invincible) {
+            this.invincibleTimer--;
+            if (this.invincibleTimer <= 0) {
+                this.invincible = false;
+            }
+        }
+
         // Handle jumping
         if (keys['Space'] && this.onGround) {
             this.velocityY = -this.jumpPower;
@@ -71,6 +95,11 @@ class Player {
 
     draw() {
         ctx.save();
+        
+        // Flash when invincible
+        if (this.invincible && Math.floor(this.invincibleTimer / 5) % 2 === 0) {
+            ctx.globalAlpha = 0.5;
+        }
         
         // Draw pixelated wizard owl
         ctx.fillStyle = '#2c2c2c'; // Black robe
@@ -121,6 +150,15 @@ class Player {
             height: this.height
         };
     }
+
+    takeDamage() {
+        if (!this.invincible) {
+            this.invincible = true;
+            this.invincibleTimer = 60; // 1 second at 60 FPS
+            return true;
+        }
+        return false;
+    }
 }
 
 // Obstacle classes
@@ -130,11 +168,10 @@ class Book {
         this.y = 300;
         this.width = 30;
         this.height = 20;
-        this.speed = gameSpeed;
     }
 
     update() {
-        this.x -= this.speed;
+        this.x -= gameSpeed;
     }
 
     draw() {
@@ -157,11 +194,10 @@ class Table {
         this.y = 270;
         this.width = 60;
         this.height = 50;
-        this.speed = gameSpeed;
     }
 
     update() {
-        this.x -= this.speed;
+        this.x -= gameSpeed;
     }
 
     draw() {
@@ -182,12 +218,11 @@ class Fireplace {
         this.y = 250;
         this.width = 40;
         this.height = 70;
-        this.speed = gameSpeed;
         this.fireFrame = 0;
     }
 
     update() {
-        this.x -= this.speed;
+        this.x -= gameSpeed;
         this.fireFrame += 0.2;
     }
 
@@ -216,12 +251,11 @@ class ArmouredTiger {
         this.y = 260;
         this.width = 50;
         this.height = 60;
-        this.speed = gameSpeed + 1;
         this.animFrame = 0;
     }
 
     update() {
-        this.x -= this.speed;
+        this.x -= gameSpeed + 1;
         this.animFrame += 0.15;
     }
 
@@ -273,12 +307,11 @@ class PotatoChip {
         this.y = 200 + Math.random() * 80;
         this.width = 20;
         this.height = 15;
-        this.speed = gameSpeed;
         this.bobOffset = Math.random() * Math.PI * 2;
     }
 
     update() {
-        this.x -= this.speed;
+        this.x -= gameSpeed;
         this.bobOffset += 0.1;
         this.y += Math.sin(this.bobOffset) * 0.5;
     }
@@ -417,7 +450,7 @@ function gameLoop() {
     player.draw();
     
     // Spawn new objects
-    if (Math.random() < 0.02) {
+    if (Math.random() < 0.015 && gameObjects.length < 10) {
         spawnGameObject();
     }
     
@@ -440,25 +473,29 @@ function gameLoop() {
                 createParticles(obj.x + obj.width/2, obj.y + obj.height/2, '#FFD700');
                 gameObjects.splice(i, 1);
             } else if (obj instanceof ArmouredTiger) {
-                lives--;
-                createParticles(player.x + player.width/2, player.y + player.height/2, '#FF0000');
-                gameObjects.splice(i, 1);
-                if (lives <= 0) {
-                    gameOver();
+                if (player.takeDamage()) {
+                    lives--;
+                    createParticles(player.x + player.width/2, player.y + player.height/2, '#FF0000');
+                    gameObjects.splice(i, 1);
+                    if (lives <= 0) {
+                        gameOver();
+                    }
                 }
             } else if (obj instanceof Book || obj instanceof Table || obj instanceof Fireplace) {
-                if (player.velocityY > 0) {
+                if (player.velocityY > 0 && player.y < obj.y) {
                     // Landing on obstacle
                     player.y = obj.y - player.height;
                     player.velocityY = 0;
                     player.onGround = true;
                 } else {
                     // Hit obstacle
-                    lives--;
-                    createParticles(player.x + player.width/2, player.y + player.height/2, '#FF0000');
-                    gameObjects.splice(i, 1);
-                    if (lives <= 0) {
-                        gameOver();
+                    if (player.takeDamage()) {
+                        lives--;
+                        createParticles(player.x + player.width/2, player.y + player.height/2, '#FF0000');
+                        gameObjects.splice(i, 1);
+                        if (lives <= 0) {
+                            gameOver();
+                        }
                     }
                 }
             }
@@ -477,8 +514,8 @@ function gameLoop() {
     }
     
     // Increase difficulty over time
-    if (score > 0 && score % 100 === 0) {
-        gameSpeed += 0.1;
+    if (score > 0 && Math.floor(score / 100) * 100 === score) {
+        gameSpeed = 2 + Math.floor(score / 100) * 0.5;
     }
     
     // Update UI
@@ -495,6 +532,9 @@ function startGame() {
     gameSpeed = 2;
     gameObjects = [];
     particles = [];
+    
+    // Clear all key states
+    Object.keys(keys).forEach(key => keys[key] = false);
     
     player = new Player();
     
