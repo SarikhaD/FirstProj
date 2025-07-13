@@ -136,6 +136,29 @@ class Player {
             this.velocityY = 0;
             this.onGround = true;
         }
+        
+        // Check if falling off platforms
+        if (this.onGround && this.y < 280) {
+            let onPlatform = false;
+            for (const obj of gameObjects) {
+                if ((obj instanceof Book || obj instanceof Table || obj instanceof Fireplace) && obj.isPlatform) {
+                    const playerCenterX = this.x + this.width/2;
+                    const objLeft = obj.x;
+                    const objRight = obj.x + obj.width;
+                    const objTop = obj.getTopY();
+                    
+                    if (playerCenterX >= objLeft && playerCenterX <= objRight && 
+                        Math.abs(this.y + this.height - objTop) < 10) {
+                        onPlatform = true;
+                        break;
+                    }
+                }
+            }
+            
+            if (!onPlatform) {
+                this.onGround = false; // Start falling
+            }
+        }
 
         // Animation
         this.animFrame += this.animSpeed;
@@ -219,28 +242,64 @@ class Player {
 
 // Obstacle classes
 class Book {
-    constructor(x) {
+    constructor(x, stackHeight = 1, isFloating = false, floatY = null) {
         this.x = x;
-        this.y = 300;
+        this.stackHeight = stackHeight;
+        this.isFloating = isFloating;
         this.width = 30;
-        this.height = 20;
+        this.height = 20 * stackHeight;
+        
+        if (isFloating && floatY !== null) {
+            this.y = floatY;
+        } else if (isFloating) {
+            this.y = 150 + Math.random() * 100; // Random floating height
+        } else {
+            this.y = 320 - this.height; // Stack from ground
+        }
+        
+        this.isPlatform = true;
+        this.platformTimer = 0; // Timer for temporary platform use
     }
 
     update() {
         this.x -= gameSpeed;
+        
+        // Reduce platform timer if player was on it
+        if (this.platformTimer > 0) {
+            this.platformTimer--;
+        }
     }
 
     draw() {
-        ctx.fillStyle = '#8B4513';
-        ctx.fillRect(this.x, this.y, this.width, this.height);
-        ctx.fillStyle = '#FFD700';
-        ctx.fillRect(this.x + 2, this.y + 2, this.width - 4, 3);
-        ctx.fillStyle = '#000';
-        ctx.fillRect(this.x + 5, this.y + 8, this.width - 10, 2);
+        // Draw each book in the stack
+        for (let i = 0; i < this.stackHeight; i++) {
+            const bookY = this.y + (this.stackHeight - 1 - i) * 20;
+            
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(this.x, bookY, this.width, 20);
+            ctx.fillStyle = '#FFD700';
+            ctx.fillRect(this.x + 2, bookY + 2, this.width - 4, 3);
+            ctx.fillStyle = '#000';
+            ctx.fillRect(this.x + 5, bookY + 8, this.width - 10, 2);
+            
+            // Add floating glow effect for floating books
+            if (this.isFloating) {
+                ctx.shadowColor = '#FFD700';
+                ctx.shadowBlur = 5;
+                ctx.strokeStyle = 'rgba(255, 215, 0, 0.3)';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(this.x - 1, bookY - 1, this.width + 2, 22);
+                ctx.shadowBlur = 0;
+            }
+        }
     }
 
     getBounds() {
         return { x: this.x, y: this.y, width: this.width, height: this.height };
+    }
+    
+    getTopY() {
+        return this.y;
     }
 }
 
@@ -250,10 +309,16 @@ class Table {
         this.y = 270;
         this.width = 60;
         this.height = 50;
+        this.isPlatform = true;
+        this.platformTimer = 0;
     }
 
     update() {
         this.x -= gameSpeed;
+        
+        if (this.platformTimer > 0) {
+            this.platformTimer--;
+        }
     }
 
     draw() {
@@ -266,6 +331,10 @@ class Table {
     getBounds() {
         return { x: this.x, y: this.y, width: this.width, height: this.height };
     }
+    
+    getTopY() {
+        return this.y;
+    }
 }
 
 class Fireplace {
@@ -275,11 +344,17 @@ class Fireplace {
         this.width = 40;
         this.height = 70;
         this.fireFrame = 0;
+        this.isPlatform = true;
+        this.platformTimer = 0;
     }
 
     update() {
         this.x -= gameSpeed;
         this.fireFrame += 0.2;
+        
+        if (this.platformTimer > 0) {
+            this.platformTimer--;
+        }
     }
 
     draw() {
@@ -297,6 +372,10 @@ class Fireplace {
 
     getBounds() {
         return { x: this.x, y: this.y, width: this.width, height: this.height };
+    }
+    
+    getTopY() {
+        return this.y;
     }
 }
 
@@ -512,27 +591,55 @@ function spawnGameObject() {
     const rand = Math.random();
     
     // Adjust tiger spawn rate based on level
-    // Level 1: 5% tigers, Level 2: 10%, Level 3: 15%, etc. up to 30% max
     const tigerRate = Math.min(0.05 + (level - 1) * 0.05, 0.3);
-    const tarotRate = 0.1; // Keep tarot cards at 10%
-    const obstacleRate = 0.45; // 45% for all obstacles combined
-    const chipRate = 0.2; // 20% for chips
+    const tarotRate = 0.1;
+    const obstacleRate = 0.4; // Reduced to make room for platforming books
+    const chipRate = 0.2;
+    const platformRate = 0.15; // New category for platforming books
     
     if (rand < obstacleRate / 3) {
-        gameObjects.push(new Book(spawnX));
+        // Single ground book
+        gameObjects.push(new Book(spawnX, 1, false));
     } else if (rand < (obstacleRate / 3) * 2) {
         gameObjects.push(new Table(spawnX));
     } else if (rand < obstacleRate) {
         gameObjects.push(new Fireplace(spawnX));
-    } else if (rand < obstacleRate + chipRate) {
+    } else if (rand < obstacleRate + platformRate) {
+        // Platforming books - stacked or floating
+        const platformType = Math.random();
+        if (platformType < 0.4) {
+            // Stacked books (2-4 high)
+            const stackHeight = 2 + Math.floor(Math.random() * 3);
+            gameObjects.push(new Book(spawnX, stackHeight, false));
+        } else if (platformType < 0.7) {
+            // Single floating book
+            const floatY = 180 + Math.random() * 80;
+            gameObjects.push(new Book(spawnX, 1, true, floatY));
+        } else {
+            // Multiple floating books for platforming sequence
+            spawnFloatingBookSequence(spawnX);
+        }
+    } else if (rand < obstacleRate + platformRate + chipRate) {
         gameObjects.push(new PotatoChip(spawnX));
-    } else if (rand < obstacleRate + chipRate + tarotRate) {
+    } else if (rand < obstacleRate + platformRate + chipRate + tarotRate) {
         gameObjects.push(new TarotCard(spawnX));
-    } else if (rand < obstacleRate + chipRate + tarotRate + tigerRate) {
+    } else if (rand < obstacleRate + platformRate + chipRate + tarotRate + tigerRate) {
         gameObjects.push(new ArmouredTiger(spawnX));
     } else {
-        // Fill remaining probability with more chips for better balance
         gameObjects.push(new PotatoChip(spawnX));
+    }
+}
+
+function spawnFloatingBookSequence(startX) {
+    // Create a sequence of 2-3 floating books for platforming
+    const sequenceLength = 2 + Math.floor(Math.random() * 2);
+    const startY = 200;
+    const heightIncrement = 40;
+    
+    for (let i = 0; i < sequenceLength; i++) {
+        const bookX = startX + i * 80;
+        const bookY = startY - i * heightIncrement;
+        gameObjects.push(new Book(bookX, 1, true, bookY));
     }
 }
 
@@ -670,11 +777,20 @@ function gameLoop() {
                 gameObjects.splice(i, 1);
                 checkLevelUp();
             } else if (obj instanceof ArmouredTiger) {
-                if (player.velocityY > 0 && player.y < obj.y && player.isLongJumping) {
-                    // Long jump defeat tiger
+                // Tigers must be jumped OVER with long jump
+                const playerCenterX = player.x + player.width/2;
+                const tigerCenterX = obj.x + obj.width/2;
+                const playerBottom = player.y + player.height;
+                const tigerTop = obj.y;
+                
+                if (player.isLongJumping && player.velocityY <= 0 && 
+                    playerBottom < tigerTop + 5 && 
+                    Math.abs(playerCenterX - tigerCenterX) < 30) {
+                    // Successfully jumping over tiger with long jump
                     score += 25;
                     createParticles(obj.x + obj.width/2, obj.y + obj.height/2, '#FFD700', 12);
-                    // Tiger defeat effect
+                    
+                    // Victory effect
                     for (let j = 0; j < 8; j++) {
                         const explosion = new Particle(
                             obj.x + obj.width/2 + (Math.random() - 0.5) * 40,
@@ -686,43 +802,98 @@ function gameLoop() {
                         particles.push(explosion);
                     }
                     gameObjects.splice(i, 1);
-                    player.y = obj.y - player.height;
-                    player.velocityY = 0;
-                    player.onGround = true;
                     checkLevelUp();
-                } else if (player.velocityY > 0 && player.y < obj.y) {
-                    // Regular jump on tiger - just land on it (no damage)
-                    player.y = obj.y - player.height;
-                    player.velocityY = 0;
-                    player.onGround = true;
                 } else {
-                    // Hit tiger from side or while falling - take damage
+                    // Any other contact with tiger = damage (failed jump, side collision, etc.)
                     if (player.takeDamage()) {
                         lives--;
                         createParticles(player.x + player.width/2, player.y + player.height/2, '#FF0000');
-                        gameObjects.splice(i, 1);
+                        // Push player back to prevent continuous damage
+                        player.x = obj.x - player.width - 10;
                         if (lives <= 0) {
                             gameOver();
                         }
                     }
                 }
             } else if (obj instanceof Book || obj instanceof Table || obj instanceof Fireplace) {
-                if (player.velocityY > 0 && player.y < obj.y) {
-                    // Landing on obstacle
-                    player.y = obj.y - player.height;
+                // Platform obstacles
+                const playerBottom = player.y + player.height;
+                const playerTop = player.y;
+                const playerLeft = player.x;
+                const playerRight = player.x + player.width;
+                const objTop = obj.getTopY();
+                const objBottom = obj.y + obj.height;
+                const objLeft = obj.x;
+                const objRight = obj.x + obj.width;
+                
+                // Check if landing on top of platform
+                if (player.velocityY > 0 && playerTop < objTop && playerBottom > objTop - 5) {
+                    // Landing on platform
+                    player.y = objTop - player.height;
                     player.velocityY = 0;
                     player.onGround = true;
+                    obj.platformTimer = 300; // 5 seconds to get down
+                    
+                    // Start countdown to force player down
+                    if (!obj.forceDownTimer) {
+                        obj.forceDownTimer = 300;
+                    }
                 } else {
-                    // Hit obstacle
-                    if (player.takeDamage()) {
-                        lives--;
-                        createParticles(player.x + player.width/2, player.y + player.height/2, '#FF0000');
-                        gameObjects.splice(i, 1);
-                        if (lives <= 0) {
-                            gameOver();
+                    // Side collision or getting stuck - damage or block
+                    if (playerRight > objLeft && playerLeft < objRight && 
+                        playerBottom > objTop && playerTop < objBottom) {
+                        
+                        // Player is stuck in obstacle
+                        if (player.takeDamage()) {
+                            lives--;
+                            createParticles(player.x + player.width/2, player.y + player.height/2, '#FF0000');
+                            // Push player back
+                            player.x = objLeft - player.width - 5;
+                            if (lives <= 0) {
+                                gameOver();
+                            }
                         }
                     }
                 }
+            }
+        }
+        
+        // Handle platform timer for forcing player down
+        if ((obj instanceof Book || obj instanceof Table || obj instanceof Fireplace) && obj.forceDownTimer) {
+            obj.forceDownTimer--;
+            
+            const playerOnPlatform = player.onGround && 
+                Math.abs(player.y + player.height - obj.getTopY()) < 5 &&
+                player.x + player.width > obj.x && player.x < obj.x + obj.width;
+            
+            if (playerOnPlatform) {
+                // Visual warning when time is running out
+                if (obj.forceDownTimer < 120) { // Last 2 seconds
+                    if (obj.forceDownTimer % 20 === 0) {
+                        createParticles(obj.x + obj.width/2, obj.getTopY() - 5, '#FF6347', 3);
+                    }
+                    
+                    // Flash the platform
+                    ctx.save();
+                    ctx.globalAlpha = 0.3;
+                    ctx.fillStyle = '#FF0000';
+                    ctx.fillRect(obj.x, obj.getTopY(), obj.width, 5);
+                    ctx.restore();
+                }
+                
+                if (obj.forceDownTimer <= 0) {
+                    // Force player off the platform
+                    if (player.x + player.width/2 < obj.x + obj.width/2) {
+                        player.x -= 3; // Push left faster
+                    } else {
+                        player.x += 3; // Push right faster
+                    }
+                    player.onGround = false;
+                    player.velocityY = 2; // Start falling
+                }
+            } else {
+                // Reset timer if player gets off platform naturally
+                obj.forceDownTimer = null;
             }
         }
     }

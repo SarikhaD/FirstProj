@@ -11,8 +11,10 @@ A retro-style HTML5 platformer game featuring a wizard owl navigating through a 
 
 ### Gameplay
 - **Continuous Running**: The owl runs continuously through the castle
-- **Jumping**: Use SPACEBAR to jump over obstacles
-- **Long Jump**: Hold R + SPACEBAR for a powerful long jump to defeat tigers
+- **Obstacle Navigation**: MUST jump over obstacles (books, tables, fireplaces) or get stuck
+- **Platform Mechanics**: Can land on obstacles briefly, but must get down within 5 seconds
+- **Long Jump Combat**: Hold R + SPACEBAR to jump OVER tigers for 25 points
+- **Vertical Platforming**: Use stacked books and floating platforms to reach higher levels
 - **Movement**: Use LEFT/RIGHT arrow keys for horizontal movement
 - **Lives System**: Start with 3 lives, lose one when hit by obstacles or enemies
 - **Level System**: Level up every 200 points and gain an extra life (max 5 lives)
@@ -20,16 +22,21 @@ A retro-style HTML5 platformer game featuring a wizard owl navigating through a 
 
 ### Castle Environment
 - **Dark Castle Setting**: Atmospheric dark castle with brick walls and textured floors
-- **Obstacles to Jump Over**:
-  - 📚 Books on the ground
-  - 🪑 Tables with legs
+- **Ground Obstacles** (must jump over or get stuck):
+  - 📚 Single books on the ground
+  - 🪑 Tables with legs  
   - 🔥 Animated fireplaces with flickering flames
+- **Platforming Elements**:
+  - 📚 Stacked books (2-4 high) for temporary platforms
+  - 📚 Floating books with magical glow for vertical progression
+  - 📚 Book sequences creating ascending platforms to higher levels
 
 ### Collectibles & Enemies
 - **🥔 Potato Chips**: Collect these for points (10 points each)
 - **🔮 Tarot Cards**: Special mystical collectibles worth 50 points each with magical effects
-- **🐅 Armoured Tigers**: Dangerous enemies that can be defeated with long jump (25 points) or avoided
+- **🐅 Armoured Tigers**: Must be jumped OVER with long jump (R+Space) for 25 points
 - **Enemy Scaling**: Tiger spawn rate increases with level (5% at level 1, up to 30% max)
+- **Platform Warnings**: Red particles and flashing when platform time is running out
 - **Particle Effects**: Visual feedback when collecting items, taking damage, or defeating enemies
 
 ### UI & Scoring
@@ -52,12 +59,14 @@ A retro-style HTML5 platformer game featuring a wizard owl navigating through a 
    - `RIGHT ARROW`: Move right
    - `ESCAPE`: Close leaderboard
 4. **Objectives**:
+   - **MUST** jump over ground obstacles or you'll get stuck and take damage
+   - Use platforms (stacked/floating books) strategically but get down within 5 seconds
+   - Jump OVER tigers with long jump (R+Space) for 25 points - don't land on them!
    - Collect potato chips (10 points) and mystical tarot cards (50 points)
-   - Avoid or jump over obstacles (books, tables, fireplaces)
-   - Defeat armoured tigers with long jump (25 points) or avoid them
+   - Use floating book sequences to access higher levels and collectibles
    - Level up every 200 points to gain extra lives
    - Achieve high scores to make it onto the Hall of Fame leaderboard
-   - Survive as long as possible to achieve a high score and maximum level
+   - Master the platforming to survive as long as possible
 
 ## Leaderboard Features
 
