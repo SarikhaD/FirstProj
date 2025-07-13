@@ -14,7 +14,8 @@ A retro-style HTML5 platformer game featuring a wizard owl navigating through a 
 - **Jumping**: Use SPACEBAR to jump over obstacles
 - **Movement**: Use LEFT/RIGHT arrow keys for horizontal movement
 - **Lives System**: Start with 3 lives, lose one when hit by obstacles or enemies
-- **Progressive Difficulty**: Game speed increases as your score grows
+- **Level System**: Level up every 200 points and gain an extra life (max 5 lives)
+- **Progressive Difficulty**: Game speed increases with each level
 
 ### Castle Environment
 - **Dark Castle Setting**: Atmospheric dark castle with brick walls and textured floors
@@ -25,12 +26,14 @@ A retro-style HTML5 platformer game featuring a wizard owl navigating through a 
 
 ### Collectibles & Enemies
 - **🥔 Potato Chips**: Collect these for points (10 points each)
-- **🐅 Armoured Tigers**: Dodge these dangerous enemies that can take a life
+- **� Tarot Cards**: Special mystical collectibles worth 50 points each with magical effects
+- **�🐅 Armoured Tigers**: Dodge these dangerous enemies that can take a life
 - **Particle Effects**: Visual feedback when collecting items or taking damage
 
 ### UI & Scoring
 - **Player Name Input**: Enter your name before starting
 - **Score Display**: Real-time score tracking
+- **Level Display**: Shows current level with visual level-up effects
 - **Lives Counter**: Shows remaining lives
 - **Game Over Screen**: Final score display with restart option
 
@@ -43,10 +46,11 @@ A retro-style HTML5 platformer game featuring a wizard owl navigating through a 
    - `LEFT ARROW`: Move left
    - `RIGHT ARROW`: Move right
 4. **Objectives**:
-   - Collect as many potato chips as possible
+   - Collect potato chips (10 points) and mystical tarot cards (50 points)
    - Avoid or jump over obstacles (books, tables, fireplaces)
    - Dodge armoured tigers
-   - Survive as long as possible to achieve a high score
+   - Level up every 200 points to gain extra lives
+   - Survive as long as possible to achieve a high score and maximum level
 
 ## Technical Details
 

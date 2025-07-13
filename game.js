@@ -6,17 +6,21 @@ const restartButton = document.getElementById('restartButton');
 const playerNameInput = document.getElementById('playerName');
 const scoreElement = document.getElementById('score');
 const livesElement = document.getElementById('lives');
+const levelElement = document.getElementById('level');
 const finalScoreElement = document.getElementById('finalScore');
+const finalLevelElement = document.getElementById('finalLevel');
 const gameOverScreen = document.getElementById('gameOver');
 
 // Game state
 let gameRunning = false;
 let gameSpeed = 2;
 let score = 0;
+let level = 1;
 let lives = 3;
 let playerName = '';
 let gameObjects = [];
 let particles = [];
+let levelUpText = { show: false, timer: 0 };
 
 // Input handling
 const keys = {};
@@ -342,6 +346,86 @@ class PotatoChip {
     }
 }
 
+// Tarot Card class (Special collectible)
+class TarotCard {
+    constructor(x) {
+        this.x = x;
+        this.y = 180 + Math.random() * 100;
+        this.width = 25;
+        this.height = 35;
+        this.rotationSpeed = 0.02;
+        this.rotation = 0;
+        this.glowPulse = 0;
+        this.cardType = Math.floor(Math.random() * 4); // 4 different card designs
+    }
+
+    update() {
+        this.x -= gameSpeed;
+        this.rotation += this.rotationSpeed;
+        this.glowPulse += 0.1;
+    }
+
+    draw() {
+        ctx.save();
+        
+        // Move to center of card for rotation
+        ctx.translate(this.x + this.width/2, this.y + this.height/2);
+        ctx.rotate(this.rotation);
+        
+        // Mystical glow effect
+        const glowIntensity = 0.3 + Math.sin(this.glowPulse) * 0.2;
+        ctx.shadowColor = '#9D4EDD';
+        ctx.shadowBlur = 10 + Math.sin(this.glowPulse) * 5;
+        
+        // Card back (dark purple)
+        ctx.fillStyle = '#2D1B69';
+        ctx.fillRect(-this.width/2, -this.height/2, this.width, this.height);
+        
+        // Card border
+        ctx.strokeStyle = '#9D4EDD';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(-this.width/2, -this.height/2, this.width, this.height);
+        
+        // Mystical symbols based on card type
+        ctx.fillStyle = '#F0C3FF';
+        ctx.font = '14px Arial';
+        ctx.textAlign = 'center';
+        
+        switch(this.cardType) {
+            case 0: // Moon
+                ctx.fillText('☾', 0, 0);
+                break;
+            case 1: // Star
+                ctx.fillText('★', 0, 0);
+                break;
+            case 2: // Sun
+                ctx.fillText('☀', 0, 0);
+                break;
+            case 3: // Eye
+                ctx.fillText('👁', 0, 0);
+                break;
+        }
+        
+        // Sparkle particles around the card
+        for (let i = 0; i < 3; i++) {
+            const sparkleX = (Math.random() - 0.5) * 40;
+            const sparkleY = (Math.random() - 0.5) * 50;
+            const sparkleSize = Math.random() * 2 + 1;
+            const sparkleAlpha = Math.sin(this.glowPulse + i) * 0.5 + 0.5;
+            
+            ctx.globalAlpha = sparkleAlpha;
+            ctx.fillStyle = '#FFD700';
+            ctx.fillRect(sparkleX, sparkleY, sparkleSize, sparkleSize);
+        }
+        
+        ctx.restore();
+    }
+
+    getBounds() {
+        return { x: this.x, y: this.y, width: this.width, height: this.height };
+    }
+}
+
 // Particle system for effects
 class Particle {
     constructor(x, y, color) {
@@ -375,14 +459,16 @@ function spawnGameObject() {
     const spawnX = canvas.width + 50;
     const rand = Math.random();
     
-    if (rand < 0.2) {
+    if (rand < 0.15) {
         gameObjects.push(new Book(spawnX));
-    } else if (rand < 0.4) {
+    } else if (rand < 0.3) {
         gameObjects.push(new Table(spawnX));
-    } else if (rand < 0.6) {
+    } else if (rand < 0.45) {
         gameObjects.push(new Fireplace(spawnX));
-    } else if (rand < 0.8) {
+    } else if (rand < 0.65) {
         gameObjects.push(new PotatoChip(spawnX));
+    } else if (rand < 0.75) {
+        gameObjects.push(new TarotCard(spawnX));
     } else {
         gameObjects.push(new ArmouredTiger(spawnX));
     }
@@ -434,6 +520,38 @@ function drawBackground() {
 function updateUI() {
     scoreElement.textContent = score;
     livesElement.textContent = lives;
+    levelElement.textContent = level;
+}
+
+function checkLevelUp() {
+    const newLevel = Math.floor(score / 200) + 1;
+    if (newLevel > level) {
+        level = newLevel;
+        lives = Math.min(lives + 1, 5); // Gain a life on level up (max 5)
+        createParticles(player.x + player.width/2, player.y + player.height/2, '#FFD700', 15);
+        // Show level up effect
+        showLevelUpEffect();
+    }
+}
+
+function showLevelUpEffect() {
+    // Create a special particle burst for level up
+    for (let i = 0; i < 20; i++) {
+        const angle = (i / 20) * Math.PI * 2;
+        const speed = 3 + Math.random() * 2;
+        const particle = new Particle(
+            player.x + player.width/2 + Math.cos(angle) * 20,
+            player.y + player.height/2 + Math.sin(angle) * 20,
+            '#9D4EDD'
+        );
+        particle.vx = Math.cos(angle) * speed;
+        particle.vy = Math.sin(angle) * speed;
+        particles.push(particle);
+    }
+    
+    // Show level up text
+    levelUpText.show = true;
+    levelUpText.timer = 120; // 2 seconds at 60 FPS
 }
 
 function gameLoop() {
@@ -472,6 +590,23 @@ function gameLoop() {
                 score += 10;
                 createParticles(obj.x + obj.width/2, obj.y + obj.height/2, '#FFD700');
                 gameObjects.splice(i, 1);
+                checkLevelUp();
+            } else if (obj instanceof TarotCard) {
+                score += 50;
+                createParticles(obj.x + obj.width/2, obj.y + obj.height/2, '#9D4EDD', 10);
+                // Extra sparkle effect for tarot cards
+                for (let j = 0; j < 5; j++) {
+                    const sparkle = new Particle(
+                        obj.x + obj.width/2 + (Math.random() - 0.5) * 30,
+                        obj.y + obj.height/2 + (Math.random() - 0.5) * 30,
+                        '#F0C3FF'
+                    );
+                    sparkle.life = 60;
+                    sparkle.maxLife = 60;
+                    particles.push(sparkle);
+                }
+                gameObjects.splice(i, 1);
+                checkLevelUp();
             } else if (obj instanceof ArmouredTiger) {
                 if (player.takeDamage()) {
                     lives--;
@@ -513,9 +648,37 @@ function gameLoop() {
         }
     }
     
-    // Increase difficulty over time
-    if (score > 0 && Math.floor(score / 100) * 100 === score) {
-        gameSpeed = 2 + Math.floor(score / 100) * 0.5;
+    // Increase difficulty based on level
+    gameSpeed = 2 + (level - 1) * 0.3;
+    
+    // Update level up text
+    if (levelUpText.show) {
+        levelUpText.timer--;
+        if (levelUpText.timer <= 0) {
+            levelUpText.show = false;
+        }
+    }
+    
+    // Draw level up text
+    if (levelUpText.show) {
+        ctx.save();
+        ctx.font = '24px Press Start 2P';
+        ctx.fillStyle = '#9D4EDD';
+        ctx.textAlign = 'center';
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        
+        const alpha = levelUpText.timer > 60 ? 1 : levelUpText.timer / 60;
+        ctx.globalAlpha = alpha;
+        
+        ctx.strokeText(`LEVEL ${level}!`, canvas.width / 2, canvas.height / 2 - 50);
+        ctx.fillText(`LEVEL ${level}!`, canvas.width / 2, canvas.height / 2 - 50);
+        
+        ctx.font = '12px Press Start 2P';
+        ctx.strokeText('+1 LIFE!', canvas.width / 2, canvas.height / 2 - 20);
+        ctx.fillText('+1 LIFE!', canvas.width / 2, canvas.height / 2 - 20);
+        
+        ctx.restore();
     }
     
     // Update UI
@@ -528,10 +691,12 @@ function startGame() {
     playerName = playerNameInput.value.trim() || 'Anonymous';
     gameRunning = true;
     score = 0;
+    level = 1;
     lives = 3;
     gameSpeed = 2;
     gameObjects = [];
     particles = [];
+    levelUpText = { show: false, timer: 0 };
     
     // Clear all key states
     Object.keys(keys).forEach(key => keys[key] = false);
@@ -545,16 +710,19 @@ function startGame() {
 function gameOver() {
     gameRunning = false;
     finalScoreElement.textContent = score;
+    finalLevelElement.textContent = level;
     gameOverScreen.classList.remove('hidden');
 }
 
 function resetGame() {
     gameRunning = false;
     score = 0;
+    level = 1;
     lives = 3;
     gameSpeed = 2;
     gameObjects = [];
     particles = [];
+    levelUpText = { show: false, timer: 0 };
     updateUI();
 }
 
