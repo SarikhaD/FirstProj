@@ -37,7 +37,9 @@ A retro-style HTML5 platformer game featuring a wizard owl navigating through a 
 - **Score Display**: Real-time score tracking
 - **Level Display**: Shows current level with visual level-up effects
 - **Lives Counter**: Shows remaining lives
-- **Game Over Screen**: Final score display with restart option
+- **Leaderboard**: Hall of Fame showing top 10 high scores with medals
+- **New Record Effects**: Spectacular celebration when achieving a new high score
+- **Game Over Screen**: Final score display with restart and leaderboard options
 
 ## How to Play
 
@@ -48,12 +50,23 @@ A retro-style HTML5 platformer game featuring a wizard owl navigating through a 
    - `R + SPACEBAR`: Long jump (defeats tigers)
    - `LEFT ARROW`: Move left
    - `RIGHT ARROW`: Move right
+   - `ESCAPE`: Close leaderboard
 4. **Objectives**:
    - Collect potato chips (10 points) and mystical tarot cards (50 points)
    - Avoid or jump over obstacles (books, tables, fireplaces)
    - Defeat armoured tigers with long jump (25 points) or avoid them
    - Level up every 200 points to gain extra lives
+   - Achieve high scores to make it onto the Hall of Fame leaderboard
    - Survive as long as possible to achieve a high score and maximum level
+
+## Leaderboard Features
+
+- **Hall of Fame**: Top 10 high scores preserved locally
+- **Medal System**: Gold 🥇, Silver 🥈, Bronze 🥉 medals for top 3 players
+- **Detailed Records**: Player name, score, level reached, and date
+- **New Record Celebration**: Spectacular particle effects and notification
+- **Persistent Storage**: Scores saved between browser sessions
+- **Easy Management**: Clear all records option available
 
 ## Technical Details
 

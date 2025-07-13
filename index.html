@@ -14,6 +14,7 @@
                 <div id="playerInfo">
                     <input type="text" id="playerName" placeholder="Enter your name" maxlength="15">
                     <button id="startButton">Start Game</button>
+                    <button id="leaderboardButton">Leaderboard</button>
                 </div>
                 <div id="scoreBoard">
                     <span>Score: <span id="score">0</span></span>
@@ -30,6 +31,7 @@
             <p>Hold R + SPACEBAR for LONG JUMP to defeat tigers! 🦉⚔️</p>
             <p>Collect 🥔 potato chips (10pts) and 🔮 tarot cards (50pts)!</p>
             <p>Defeat tigers with long jump (25pts) or avoid them!</p>
+            <p>🏆 Compete for the top spot on the Hall of Fame leaderboard! 🏆</p>
         </div>
         
         <div id="gameOver" class="hidden">
@@ -37,6 +39,31 @@
             <p>Final Score: <span id="finalScore">0</span></p>
             <p>Level Reached: <span id="finalLevel">1</span></p>
             <button id="restartButton">Play Again</button>
+            <button id="viewLeaderboardButton">View Leaderboard</button>
+        </div>
+        
+        <div id="leaderboard" class="hidden">
+            <h2>🏆 Hall of Fame 🏆</h2>
+            <div id="leaderboardContent">
+                <table id="leaderboardTable">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Wizard Name</th>
+                            <th>Score</th>
+                            <th>Level</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboardBody">
+                        <!-- Scores will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="leaderboardActions">
+                <button id="clearLeaderboardButton">Clear Records</button>
+                <button id="closeLeaderboardButton">Close</button>
+            </div>
         </div>
     </div>
 

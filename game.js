@@ -10,6 +10,12 @@ const levelElement = document.getElementById('level');
 const finalScoreElement = document.getElementById('finalScore');
 const finalLevelElement = document.getElementById('finalLevel');
 const gameOverScreen = document.getElementById('gameOver');
+const leaderboardButton = document.getElementById('leaderboardButton');
+const viewLeaderboardButton = document.getElementById('viewLeaderboardButton');
+const leaderboardScreen = document.getElementById('leaderboard');
+const leaderboardBody = document.getElementById('leaderboardBody');
+const clearLeaderboardButton = document.getElementById('clearLeaderboardButton');
+const closeLeaderboardButton = document.getElementById('closeLeaderboardButton');
 
 // Game state
 let gameRunning = false;
@@ -28,6 +34,12 @@ document.addEventListener('keydown', (e) => {
     if (e.code === 'Space') {
         e.preventDefault(); // Prevent page scrolling
     }
+    if (e.code === 'Escape') {
+        // Close leaderboard on escape
+        if (!leaderboardScreen.classList.contains('hidden')) {
+            hideLeaderboard();
+        }
+    }
     if (gameRunning && document.activeElement !== playerNameInput) {
         keys[e.code] = true;
     }
@@ -38,6 +50,13 @@ document.addEventListener('keyup', (e) => {
     }
     if (gameRunning && document.activeElement !== playerNameInput) {
         keys[e.code] = false;
+    }
+});
+
+// Close leaderboard when clicking outside
+leaderboardScreen.addEventListener('click', (e) => {
+    if (e.target === leaderboardScreen) {
+        hideLeaderboard();
     }
 });
 
@@ -782,7 +801,77 @@ function gameOver() {
     gameRunning = false;
     finalScoreElement.textContent = score;
     finalLevelElement.textContent = level;
+    
+    // Check if it's a new record before saving
+    const isNewRecord = checkNewRecord(score, level);
+    
+    // Save score to leaderboard
+    saveScore(playerName, score, level);
+    
+    if (isNewRecord) {
+        // Show new record celebration
+        showNewRecordEffect();
+    }
+    
     gameOverScreen.classList.remove('hidden');
+}
+
+function showNewRecordEffect() {
+    // Create spectacular particle burst for new record
+    for (let i = 0; i < 50; i++) {
+        const angle = (i / 50) * Math.PI * 2;
+        const speed = 4 + Math.random() * 3;
+        const distance = 30 + Math.random() * 50;
+        
+        const particle = new Particle(
+            canvas.width / 2 + Math.cos(angle) * distance,
+            canvas.height / 2 + Math.sin(angle) * distance,
+            i % 3 === 0 ? '#FFD700' : i % 3 === 1 ? '#FFA500' : '#FF6347'
+        );
+        particle.vx = Math.cos(angle) * speed;
+        particle.vy = Math.sin(angle) * speed;
+        particle.life = 120;
+        particle.maxLife = 120;
+        particles.push(particle);
+    }
+    
+    // Add "NEW RECORD!" text effect
+    setTimeout(() => {
+        const recordText = document.createElement('div');
+        recordText.innerHTML = '🏆 NEW RECORD! 🏆';
+        recordText.style.cssText = `
+            position: absolute;
+            top: 30%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Press Start 2P', cursive;
+            font-size: 16px;
+            color: #FFD700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            z-index: 1000;
+            animation: pulse 1s infinite;
+            pointer-events: none;
+        `;
+        
+        // Add pulse animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes pulse {
+                0% { transform: translate(-50%, -50%) scale(1); }
+                50% { transform: translate(-50%, -50%) scale(1.1); }
+                100% { transform: translate(-50%, -50%) scale(1); }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        document.body.appendChild(recordText);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            recordText.remove();
+            style.remove();
+        }, 3000);
+    }, 500);
 }
 
 function resetGame() {
@@ -797,9 +886,100 @@ function resetGame() {
     updateUI();
 }
 
+// Leaderboard functions
+function saveScore(playerName, score, level) {
+    const scoreData = {
+        name: playerName || 'Anonymous',
+        score: score,
+        level: level,
+        date: new Date().toLocaleDateString()
+    };
+    
+    let scores = getLeaderboard();
+    scores.push(scoreData);
+    
+    // Sort by score (highest first), then by level
+    scores.sort((a, b) => {
+        if (b.score !== a.score) {
+            return b.score - a.score;
+        }
+        return b.level - a.level;
+    });
+    
+    // Keep only top 10 scores
+    scores = scores.slice(0, 10);
+    
+    localStorage.setItem('wizardOwlLeaderboard', JSON.stringify(scores));
+}
+
+function getLeaderboard() {
+    const stored = localStorage.getItem('wizardOwlLeaderboard');
+    return stored ? JSON.parse(stored) : [];
+}
+
+function displayLeaderboard() {
+    const scores = getLeaderboard();
+    leaderboardBody.innerHTML = '';
+    
+    if (scores.length === 0) {
+        const row = document.createElement('tr');
+        row.innerHTML = '<td colspan="5" style="text-align: center; padding: 20px;">No records yet! Be the first!</td>';
+        leaderboardBody.appendChild(row);
+        return;
+    }
+    
+    scores.forEach((scoreData, index) => {
+        const row = document.createElement('tr');
+        
+        let rankDisplay = index + 1;
+        if (index === 0) rankDisplay = '🥇';
+        else if (index === 1) rankDisplay = '🥈';
+        else if (index === 2) rankDisplay = '🥉';
+        
+        row.innerHTML = `
+            <td class="rank-medal">${rankDisplay}</td>
+            <td>${scoreData.name}</td>
+            <td>${scoreData.score.toLocaleString()}</td>
+            <td>${scoreData.level}</td>
+            <td>${scoreData.date}</td>
+        `;
+        
+        leaderboardBody.appendChild(row);
+    });
+}
+
+function showLeaderboard() {
+    displayLeaderboard();
+    leaderboardScreen.classList.remove('hidden');
+    gameOverScreen.classList.add('hidden');
+}
+
+function hideLeaderboard() {
+    leaderboardScreen.classList.add('hidden');
+}
+
+function clearLeaderboard() {
+    if (confirm('Are you sure you want to clear all leaderboard records?')) {
+        localStorage.removeItem('wizardOwlLeaderboard');
+        displayLeaderboard();
+    }
+}
+
+function checkNewRecord(score, level) {
+    const scores = getLeaderboard();
+    if (scores.length < 10) return true; // Less than 10 scores, always a record
+    
+    const lowestScore = scores[scores.length - 1];
+    return score > lowestScore.score || (score === lowestScore.score && level > lowestScore.level);
+}
+
 // Event listeners
 startButton.addEventListener('click', startGame);
 restartButton.addEventListener('click', startGame);
+leaderboardButton.addEventListener('click', showLeaderboard);
+viewLeaderboardButton.addEventListener('click', showLeaderboard);
+closeLeaderboardButton.addEventListener('click', hideLeaderboard);
+clearLeaderboardButton.addEventListener('click', clearLeaderboard);
 
 // Initialize player
 let player = new Player();
